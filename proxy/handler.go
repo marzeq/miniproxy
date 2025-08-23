@@ -12,11 +12,11 @@ import (
 )
 
 type Handler struct {
-  config map[*config.ProxySource]*config.ProxyDest
+  config *config.Config
   log    *log.Logger
 }
 
-func NewHandler(cfg map[*config.ProxySource]*config.ProxyDest, l *log.Logger) http.Handler {
+func NewHandler(cfg *config.Config, l *log.Logger) http.Handler {
   return &Handler{cfg, l}
 }
 
@@ -27,21 +27,19 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
   host := r.Host
 
   var target *config.ProxyDest
-  for cmd, dst := range h.config {
-    if ProxySourceMatchesHost(cmd, host) {
+  for _, mp := range h.config.Mappings {
+		src := mp.First
+		dst := mp.Second
+    if ProxySourceMatchesHost(src, host) {
       target = dst
       break
     }
   }
 
-  if target == nil {
-    for cmd, dst := range h.config {
-      if cmd.HostPath == "404" {
-        target = dst
-        break
-      }
-    }
-    if target == nil {
+	if target == nil {
+		if h.config.Special404 != nil {
+			target = h.config.Special404
+		} else {
       h.log.Println("No proxy target found for incoming host:", host)
       w.WriteHeader(http.StatusBadRequest)
       return
@@ -79,15 +77,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
   proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
-    var fallback *config.ProxyDest
-    for cmd, dst := range h.config {
-      if cmd.HostPath == "504" {
-        fallback = dst
-        break
-      }
-    }
-
-    if fallback != nil {
+    if h.config.Special504 != nil {
+			fallback := h.config.Special504
       if fallback.ServeFrom != "" {
         http.StripPrefix("/", http.FileServer(http.Dir(fallback.ServeFrom))).ServeHTTP(w, r)
         return
@@ -102,10 +93,10 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
         httputil.NewSingleHostReverseProxy(fallbackURL).ServeHTTP(w, r)
         return
       }
-    }
+		}
 
-    h.log.Println("Upstream request failed:", err)
-    w.WriteHeader(http.StatusGatewayTimeout)
+		h.log.Println("Upstream request failed:", err)
+		w.WriteHeader(http.StatusGatewayTimeout)
   }
 
   proxy.ServeHTTP(w, r)

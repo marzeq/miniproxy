@@ -8,15 +8,20 @@ import (
   "github.com/marzeq/mconf/mconf_values"
 )
 
-func Parse(path string) (map[*ProxySource]*ProxyDest, error) {
-  config := make(map[*ProxySource]*ProxyDest)
+func Parse(path string) (*Config, error) {
+	config := &Config{
+		Mappings:   []Pair[*ProxySource, *ProxyDest]{},
+		Special404: nil,
+		Special504: nil,
+	}
 
-  confFile, _, err := mconf.ParseFromFile(path)
+  confFile, confOrder, _, err := mconf.ParseFromFile(path)
   if err != nil {
     return nil, err
   }
 
-  for source, destVal := range confFile {
+  for _, source := range confOrder {
+		destVal := confFile[source]
     destObj, ok := destVal.(*mconf_values.MconfObject)
     if !ok {
       destStr, ok := destVal.(*mconf_values.MconfString)
@@ -121,7 +126,14 @@ func Parse(path string) (map[*ProxySource]*ProxyDest, error) {
 			Tls:      tls,
     }
 
-    config[proxySource] = proxyDest
+		switch host {
+		case "404":
+			config.Special404 = proxyDest
+		case "504":
+			config.Special504 = proxyDest
+		default:
+			config.Mappings = append(config.Mappings, Pair[*ProxySource, *ProxyDest]{First: proxySource, Second: proxyDest})
+		}
   }
 
   return config, nil

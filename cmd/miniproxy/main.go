@@ -25,7 +25,10 @@ func main() {
 
   certs := make(map[string]config.TlsConfig)
 
-  for cmd, dst := range cfg {
+  for _, mp := range cfg.Mappings {
+		src := mp.First
+		dst := mp.Second
+
     dests := ""
     if dst.Host != "" {
       dests += dst.Host
@@ -37,20 +40,19 @@ func main() {
       dests += "static content from " + dst.ServeFrom
     }
 
-    switch cmd.HostPath {
-    case "404":
-      l.Printf("Proxying all unmatched hosts to %s (special \"404\" host)\n", dests)
-    case "504":
-      l.Printf("Proxying all unresponsive hosts to %s (special \"504\" host)\n", dests)
-    default:
-      l.Printf("Proxying %s to %s\n", cmd.HostPath, dests)
-    }
+		l.Printf("Proxying %s to %s\n", src.HostPath, dests)
 
-    if cmd.Tls != nil {
-      certs[cmd.HostPath] = *cmd.Tls
-      l.Printf(" -- with TLS %s\n", cmd.Tls)
+    if src.Tls != nil {
+      certs[src.HostPath] = *src.Tls
+      l.Printf(" -- with TLS %s\n", src.Tls)
     }
   }
+	if cfg.Special404 != nil {
+		l.Printf("Special 404 page to %s\n", cfg.Special404)
+	}
+	if cfg.Special504 != nil {
+		l.Printf("Special 504 page to %s\n", cfg.Special504)
+	}
 
   port := os.Getenv("PORT")
   if port == "" {
@@ -78,9 +80,10 @@ func main() {
 			GetCertificate: func(clientHello *tls.ClientHelloInfo) (*tls.Certificate, error) {
 				host := clientHello.ServerName
 
-				for ps := range cfg {
-					if proxy.ProxySourceMatchesHost(ps, host) && ps.Tls != nil {
-						cert, err := tls.LoadX509KeyPair(ps.Tls.Cert, ps.Tls.Key)
+				for _, mp := range cfg.Mappings {
+					src := mp.First
+					if proxy.ProxySourceMatchesHost(src, host) && src.Tls != nil {
+						cert, err := tls.LoadX509KeyPair(src.Tls.Cert, src.Tls.Key)
 						if err != nil {
 							l.Printf("Error loading cert for %s: %v", host, err)
 							return nil, err
@@ -97,7 +100,6 @@ func main() {
 					}
 					return &cert, nil
 				}
-
 				l.Printf("No certificate found for host %s", host)
 				return nil, nil
 			},

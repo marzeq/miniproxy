@@ -2,6 +2,21 @@ package config
 
 import "fmt"
 
+type Pair[T any, V any] struct {
+	First  T
+	Second V
+}
+
+func (p Pair[T, V]) String() string {
+	return fmt.Sprintf("(%v,%v)", p.First, p.Second)
+}
+
+type Config struct {
+	Mappings []Pair[*ProxySource, *ProxyDest]
+	Special404 *ProxyDest
+	Special504 *ProxyDest
+}
+
 type TlsConfig struct {
 	Cert string
 	Key  string
