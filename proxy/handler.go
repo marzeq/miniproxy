@@ -20,6 +20,8 @@ func NewHandler(cfg map[*ProxySource]*ProxyDest, l *log.Logger) http.Handler {
 
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	h.log.Printf("Incoming request: %s %s from %s\n", r.Method, r.URL, r.RemoteAddr)
+
   host := r.Host
 
   var target *ProxyDest
@@ -34,7 +36,6 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     for cmd, dst := range h.config {
       if cmd.HostPath == "404" {
         target = dst
-        h.log.Println("Using 404 proxy target for incoming host:", host)
         break
       }
     }
@@ -80,7 +81,6 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     for cmd, dst := range h.config {
       if cmd.HostPath == "504" {
         fallback = dst
-        h.log.Println("Using 504 proxy target for incoming host:", host)
         break
       }
     }
