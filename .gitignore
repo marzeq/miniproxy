@@ -1,1 +1,6 @@
 /miniproxy
+config.mconf
+*.crt
+*.key
+*.pem
+*.csr

@@ -7,14 +7,16 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"strings"
+
+	"github.com/marzeq/miniproxy/config"
 )
 
 type Handler struct {
-  config map[*ProxySource]*ProxyDest
+  config map[*config.ProxySource]*config.ProxyDest
   log    *log.Logger
 }
 
-func NewHandler(cfg map[*ProxySource]*ProxyDest, l *log.Logger) http.Handler {
+func NewHandler(cfg map[*config.ProxySource]*config.ProxyDest, l *log.Logger) http.Handler {
   return &Handler{cfg, l}
 }
 
@@ -24,7 +26,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
   host := r.Host
 
-  var target *ProxyDest
+  var target *config.ProxyDest
   for cmd, dst := range h.config {
     if ProxySourceMatchesHost(cmd, host) {
       target = dst
@@ -77,7 +79,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
   proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
-    var fallback *ProxyDest
+    var fallback *config.ProxyDest
     for cmd, dst := range h.config {
       if cmd.HostPath == "504" {
         fallback = dst

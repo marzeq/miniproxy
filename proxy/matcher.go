@@ -1,34 +1,15 @@
 package proxy
 
 import (
-  "fmt"
-  "strings"
+	"fmt"
+	"strings"
+
+	"github.com/marzeq/miniproxy/config"
 )
 
-type ProxySource struct {
-  HostPath string
-  Port     int // 0 = any port
-}
-
-func (p ProxySource) String() string {
-  if p.Port == 0 {
-    return p.HostPath
-  }
-  return fmt.Sprintf("%s:%d", p.HostPath, p.Port)
-}
-
-type ProxyDest struct {
-  Host string
-	ServeFrom string // serve static files from this path, mutually exclusive with Host
-}
-
-func (p ProxyDest) String() string {
-  return p.Host
-}
-
-func ProxySourceMatchesHost(ps *ProxySource, host string) bool {
+func ProxySourceMatchesHost(ps *config.ProxySource, host string) bool {
   if ps.Port != 0 {
-    port := 80
+    port := 0
     hostParts := strings.Split(host, ":")
     if len(hostParts) == 2 {
       _, err := fmt.Sscanf(hostParts[1], "%d", &port)
@@ -36,7 +17,13 @@ func ProxySourceMatchesHost(ps *ProxySource, host string) bool {
         return false
       }
       host = hostParts[0]
-    }
+    } else {
+			if ps.Tls != nil {
+				port = 443
+			} else {
+				port = 80
+			}
+		}
     if port != ps.Port {
       return false
     }

@@ -6,11 +6,10 @@ import (
 
   "github.com/marzeq/mconf"
   "github.com/marzeq/mconf/mconf_values"
-  "github.com/marzeq/miniproxy/proxy"
 )
 
-func Parse(path string) (map[*proxy.ProxySource]*proxy.ProxyDest, error) {
-  config := make(map[*proxy.ProxySource]*proxy.ProxyDest)
+func Parse(path string) (map[*ProxySource]*ProxyDest, error) {
+  config := make(map[*ProxySource]*ProxyDest)
 
   confFile, _, err := mconf.ParseFromFile(path)
   if err != nil {
@@ -31,7 +30,7 @@ func Parse(path string) (map[*proxy.ProxySource]*proxy.ProxyDest, error) {
     }
 
 
-		var proxyDest *proxy.ProxyDest
+		var proxyDest *ProxyDest
 		picked := []string{}
 		if _, ok := destObj.Value["dest"]; ok {
 			destStr, ok := destObj.Value["dest"].(*mconf_values.MconfString)
@@ -41,7 +40,7 @@ func Parse(path string) (map[*proxy.ProxySource]*proxy.ProxyDest, error) {
 			if len(destStr.Value) == 0 {
 				return nil, fmt.Errorf("empty dest in source %s", source)
 			}
-			proxyDest = &proxy.ProxyDest{
+			proxyDest = &ProxyDest{
 				Host: destStr.Value,
 			}
 			picked = append(picked, "dest")
@@ -54,7 +53,7 @@ func Parse(path string) (map[*proxy.ProxySource]*proxy.ProxyDest, error) {
 			if len(serveFromStr.Value) == 0 {
 				return nil, fmt.Errorf("empty serve_from in source %s", source)
 			}
-			proxyDest = &proxy.ProxyDest{
+			proxyDest = &ProxyDest{
 				ServeFrom: serveFromStr.Value,
 			}
 			picked = append(picked, "serve_from")
@@ -82,9 +81,44 @@ func Parse(path string) (map[*proxy.ProxySource]*proxy.ProxyDest, error) {
       return nil, fmt.Errorf("empty host in source %s", source)
     }
 
-    proxySource := &proxy.ProxySource{
+		tls := &TlsConfig{}
+		if _, ok := destObj.Value["tls"]; ok {
+			tlsObj, ok := destObj.Value["tls"].(*mconf_values.MconfObject)
+			if !ok {
+				return nil, fmt.Errorf("tls must be object %s", source)
+			}
+
+			if _, ok := tlsObj.Value["cert"]; !ok {
+				return nil, fmt.Errorf("tls.cert must be set if tls is set %s", source)
+			}
+			certStr, ok := tlsObj.Value["cert"].(*mconf_values.MconfString)
+			if !ok {
+				return nil, fmt.Errorf("tls.cert must be string %s", source)
+			}
+			if len(certStr.Value) == 0 {
+				return nil, fmt.Errorf("empty tls.cert in source %s", source)
+			}
+			tls.Cert = certStr.Value
+
+			if _, ok := tlsObj.Value["key"]; !ok {
+				return nil, fmt.Errorf("tls.key must be set if tls is set %s", source)
+			}
+			keyStr, ok := tlsObj.Value["key"].(*mconf_values.MconfString)
+			if !ok {
+				return nil, fmt.Errorf("tls.key must be string %s", source)
+			}
+			if len(keyStr.Value) == 0 {
+				return nil, fmt.Errorf("empty tls.key in source %s", source)
+			}
+			tls.Key = keyStr.Value
+		} else {
+			tls = nil
+		}
+
+    proxySource := &ProxySource{
       HostPath: host,
       Port:     sourcePort,
+			Tls:      tls,
     }
 
     config[proxySource] = proxyDest
