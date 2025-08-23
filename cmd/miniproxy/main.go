@@ -89,6 +89,16 @@ func main() {
 					}
 				}
 
+				if tlsConf, ok := certs["404"]; ok {
+					cert, err := tls.LoadX509KeyPair(tlsConf.Cert, tlsConf.Key)
+					if err != nil {
+						l.Printf("Error loading cert for 404: %v", err)
+						return nil, err
+					}
+					return &cert, nil
+				}
+
+				l.Printf("No certificate found for host %s", host)
 				return nil, nil
 			},
 		}
