@@ -1,14 +1,14 @@
 package proxy
 
 import (
-	"crypto/tls"
-	"log"
-	"net/http"
-	"net/http/httputil"
-	"net/url"
-	"strings"
+  "crypto/tls"
+  "log"
+  "net/http"
+  "net/http/httputil"
+  "net/url"
+  "strings"
 
-	"github.com/marzeq/miniproxy/config"
+  "github.com/marzeq/miniproxy/config"
 )
 
 type Handler struct {
@@ -22,24 +22,24 @@ func NewHandler(cfg *config.Config, l *log.Logger) http.Handler {
 
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	h.log.Printf("Incoming request: %s %s from %s\n", r.Method, r.URL, r.RemoteAddr)
+  h.log.Printf("Incoming request: %s %s from %s\n", r.Method, r.URL, r.RemoteAddr)
 
   host := r.Host
 
   var target *config.ProxyDest
   for _, mp := range h.config.Mappings {
-		src := mp.First
-		dst := mp.Second
+    src := mp.First
+    dst := mp.Second
     if ProxySourceMatchesHost(src, host) {
       target = dst
       break
     }
   }
 
-	if target == nil {
-		if h.config.Special404 != nil {
-			target = h.config.Special404
-		} else {
+  if target == nil {
+    if h.config.Special404 != nil {
+      target = h.config.Special404
+    } else {
       h.log.Println("No proxy target found for incoming host:", host)
       w.WriteHeader(http.StatusBadRequest)
       return
@@ -73,12 +73,12 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
   }
 
   proxy := httputil.NewSingleHostReverseProxy(targetURL)
-	proxy.Transport = &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
+  proxy.Transport = &http.Transport{
+    TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+  }
   proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
     if h.config.Special504 != nil {
-			fallback := h.config.Special504
+      fallback := h.config.Special504
       if fallback.ServeFrom != "" {
         http.StripPrefix("/", http.FileServer(http.Dir(fallback.ServeFrom))).ServeHTTP(w, r)
         return
@@ -93,10 +93,10 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
         httputil.NewSingleHostReverseProxy(fallbackURL).ServeHTTP(w, r)
         return
       }
-		}
+    }
 
-		h.log.Println("Upstream request failed:", err)
-		w.WriteHeader(http.StatusGatewayTimeout)
+    h.log.Println("Upstream request failed:", err)
+    w.WriteHeader(http.StatusGatewayTimeout)
   }
 
   proxy.ServeHTTP(w, r)

@@ -1,10 +1,10 @@
 package proxy
 
 import (
-	"fmt"
-	"strings"
+  "fmt"
+  "strings"
 
-	"github.com/marzeq/miniproxy/config"
+  "github.com/marzeq/miniproxy/config"
 )
 
 func ProxySourceMatchesHost(ps *config.ProxySource, host string) bool {
@@ -18,12 +18,12 @@ func ProxySourceMatchesHost(ps *config.ProxySource, host string) bool {
       }
       host = hostParts[0]
     } else {
-			if ps.Tls != nil {
-				port = 443
-			} else {
-				port = 80
-			}
-		}
+      if ps.Tls != nil {
+        port = 443
+      } else {
+        port = 80
+      }
+    }
     if port != ps.Port {
       return false
     }
@@ -36,9 +36,9 @@ func ProxySourceMatchesHost(ps *config.ProxySource, host string) bool {
   if domain, ok := strings.CutPrefix(ps.HostPath, "*."); ok {
     return strings.HasSuffix(host, "." + domain)
   }
-	if domain, ok := strings.CutSuffix(ps.HostPath, ".*"); ok {
-		return strings.HasPrefix(host, domain + ".")
-	}
+  if domain, ok := strings.CutSuffix(ps.HostPath, ".*"); ok {
+    return strings.HasPrefix(host, domain + ".")
+  }
 
   return ps.HostPath == host
 }
