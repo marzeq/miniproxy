@@ -1,10 +1,32 @@
+### The whats and the whys
+
+#### The whats
+
+MiniProxy is a minimalistic HTTP reverse proxy written in Go. It also supports serving static files.
+
+It's main goal is to be extremely simple, simpler than even Caddy, not to mention Nginx.
+It has no fancy features, no certbot integration, no fancy load balancing, no authentication, nothing, just the bare minimum to get the job done.
+
+I recognise TLS might be important to you, I'm planning to add it in the future, but for now, you can use something like a Clourflare proxy in front of it
+and that gets you TLS as an added bonus to the main benefits of using Cloudflare.
+
+#### The whys
+
+Because I can lol.
+
+Well, besides that, it's also because I realised it's probably easier for me to write my own proxy than to learn how to configure Caddy or Nginx properly.
+
 ### Building
+
+Get like a modern Go or something and then:
 
 ```sh
 go build ./cmd/miniproxy
 ```
 
 ### Running
+
+No rocket science here, just run the binary.
 
 ```sh
 ./miniproxy
@@ -44,3 +66,11 @@ Default config path is `/etc/miniproxy/config.mconf`.
 ### License
 
 MIT
+
+### Roadmap
+
+- [x] Basic reverse proxy functionality
+- [x] Wildcard domain support
+- [x] Static file serving
+- [x] Special 404 and 504 handling
+- [ ] TLS from files
