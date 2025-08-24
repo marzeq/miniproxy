@@ -10,6 +10,9 @@ import (
   "github.com/marzeq/miniproxy/proxy"
 )
 
+const name = "miniproxy"
+const version = "1.0.0"
+
 func main() {
   l := log.New(os.Stdout, "", log.LstdFlags)
 
@@ -53,6 +56,8 @@ func main() {
   if cfg.Special504 != nil {
     l.Printf("Special 504 page to %s\n", cfg.Special504)
   }
+
+	l.Printf("%s version %s\n", name, version)
 
   port := os.Getenv("PORT")
   if port == "" {
