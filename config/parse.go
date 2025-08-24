@@ -4,8 +4,8 @@ import (
   "fmt"
   "strings"
 
-  "github.com/marzeq/mconf"
-  "github.com/marzeq/mconf/mconf_values"
+  "github.com/marzeq/mconf/v2"
+  "github.com/marzeq/mconf/v2/mconf_values"
 )
 
 func Parse(path string) (*Config, error) {
@@ -15,13 +15,13 @@ func Parse(path string) (*Config, error) {
     Special504: nil,
   }
 
-  confFile, confOrder, _, err := mconf.ParseFromFile(path)
+  confFile, _, err := mconf.ParseFromFile(path)
   if err != nil {
     return nil, err
   }
 
-  for _, source := range confOrder {
-    destVal := confFile[source]
+  for _, source := range confFile.KeysOrder{
+    destVal := confFile.Value[source]
     destObj, ok := destVal.(*mconf_values.MconfObject)
     if !ok {
       destStr, ok := destVal.(*mconf_values.MconfString)
