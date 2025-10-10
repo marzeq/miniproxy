@@ -2,28 +2,24 @@
 
 #### The whats
 
-MiniProxy is a minimalistic HTTP reverse proxy written in Go. It also supports serving static files.
+MiniProxy is a feature rich, yet simple, wrapper around Go's HTTP proxy - `httputil.NewSingleHostReverseProxy`.
 
 It's main goal is to be extremely simple, simpler than even Caddy, not to mention Nginx.
 It has no fancy features, just the bare minimum to get the job done.
 
 #### The whys
 
-Because I can lol.
+Because I can.
 
 Well, besides that, it's also because I realised it's probably easier for me to write my own proxy than to learn how to configure Caddy or Nginx properly.
 
 ### Building
-
-Get like a modern Go or something and then:
 
 ```sh
 go build ./cmd/miniproxy
 ```
 
 ### Running
-
-No rocket science here, just run the binary.
 
 ```sh
 ./miniproxy
@@ -79,3 +75,4 @@ MIT
 - [x] Static file serving
 - [x] Special 404 and 504 handling
 - [x] TLS from files
+- [ ] Shell commands alongside host/serve_from – quasi-webhooks
