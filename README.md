@@ -2,7 +2,7 @@
 
 #### The whats
 
-MiniProxy is a feature rich, yet simple, wrapper around Go's HTTP proxy - `httputil.NewSingleHostReverseProxy`.
+MiniProxy is a wrapper around Go's HTTP proxy - `httputil.NewSingleHostReverseProxy`.
 
 It's main goal is to be extremely simple, simpler than even Caddy, not to mention Nginx.
 It has no fancy features, just the bare minimum to get the job done.
