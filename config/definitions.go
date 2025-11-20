@@ -42,6 +42,8 @@ func (p ProxySource) String() string {
 type ProxyDest struct {
   Host string
   ServeFrom string // serve static files from this path, mutually exclusive with Host
+	ShellAfter []string
+	ShellBefore []string
 }
 
 func (p ProxyDest) String() string {

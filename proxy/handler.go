@@ -1,14 +1,17 @@
 package proxy
 
 import (
-  "crypto/tls"
-  "log"
-  "net/http"
-  "net/http/httputil"
-  "net/url"
-  "strings"
+	"crypto/tls"
+	"fmt"
+	"log"
+	"net/http"
+	"net/http/httputil"
+	"net/url"
+	"os/exec"
+	"runtime"
+	"strings"
 
-  "github.com/marzeq/miniproxy/config"
+	"github.com/marzeq/miniproxy/config"
 )
 
 type Handler struct {
@@ -99,5 +102,55 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     w.WriteHeader(http.StatusGatewayTimeout)
   }
 
+	if target.ShellBefore != nil {
+		ExecuteShellCommands(target.ShellBefore, h.log)
+	}
+
   proxy.ServeHTTP(w, r)
+
+	if target.ShellAfter != nil {
+		ExecuteShellCommands(target.ShellAfter, h.log)
+	}
+}
+
+func ExecuteShellCommands(commands []string, logger *log.Logger) bool {
+	for _, cmd := range commands {
+		logger.Printf("Executing shell command '%s'\n", cmd)
+		err := ExecuteShellCommand(cmd)
+		if err != nil {
+			logger.Printf("Error executing shell command '%s': %v\n", cmd, err)
+			return false
+		}
+	}
+
+	return true
+}
+
+func ExecuteShellCommand(command string) error {
+  var shell string
+  var args []string
+
+  switch runtime.GOOS {
+  case "windows":
+    shell = "cmd.exe"
+    args = []string{"/C", command}
+
+  default:
+    if _, err := exec.LookPath("bash"); err == nil {
+      shell = "bash"
+      args = []string{"-c", command}
+    } else if _, err := exec.LookPath("sh"); err == nil {
+      shell = "sh"
+      args = []string{"-c", command}
+    } else {
+      return fmt.Errorf("no suitable shell found to execute command")
+    }
+  }
+
+  cmd := exec.Command(shell, args...)
+  cmd.Stdout = nil
+  cmd.Stderr = nil
+  cmd.Stdin = nil
+
+  return cmd.Run()
 }

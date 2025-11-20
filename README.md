@@ -75,4 +75,4 @@ MIT
 - [x] Static file serving
 - [x] Special 404 and 504 handling
 - [x] TLS from files
-- [ ] Shell commands alongside host/serve_from – quasi-webhooks
+- [x] Shell commands alongside host/serve_from – quasi-webhooks

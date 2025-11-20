@@ -63,6 +63,36 @@ func Parse(path string) (*Config, error) {
       }
       picked = append(picked, "serve_from")
     }
+		if _, ok := destObj.Value["shell_after"]; ok {
+			shellAfterArr, ok := destObj.Value["shell_after"].(*mconf_values.MconfList)
+			if !ok {
+				return nil, fmt.Errorf("shell_after must be array %s", source)
+			}
+			shellAfter := []string{}
+			for _, v := range shellAfterArr.Value {
+				vStr, ok := v.(*mconf_values.MconfString)
+				if !ok {
+					return nil, fmt.Errorf("shell_after must be array of strings %s", source)
+				}
+				shellAfter = append(shellAfter, vStr.Value)
+			}
+			proxyDest.ShellAfter = shellAfter
+		}
+		if _, ok := destObj.Value["shell_before"]; ok {
+			shellBeforeArr, ok := destObj.Value["shell_before"].(*mconf_values.MconfList)
+			if !ok {
+				return nil, fmt.Errorf("shell_before must be array %s", source)
+			}
+			shellBefore := []string{}
+			for _, v := range shellBeforeArr.Value {
+				vStr, ok := v.(*mconf_values.MconfString)
+				if !ok {
+					return nil, fmt.Errorf("shell_before must be array of strings %s", source)
+				}
+				shellBefore = append(shellBefore, vStr.Value)
+			}
+			proxyDest.ShellBefore = shellBefore
+		}
 
     if len(picked) > 1 {
       return nil, fmt.Errorf("%s - only one of dest or serve_from can be set (has: %s)", source, strings.Join(picked, ", "))
