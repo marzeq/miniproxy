@@ -1,8 +1,10 @@
 package proxy
 
 import (
+	"bytes"
 	"crypto/tls"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -21,6 +23,20 @@ type Handler struct {
 
 func NewHandler(cfg *config.Config, l *log.Logger) http.Handler {
   return &Handler{cfg, l}
+}
+
+type intercept404 struct {
+	http.ResponseWriter
+	status int
+	buf    bytes.Buffer
+}
+
+func (r *intercept404) WriteHeader(code int) {
+	r.status = code
+}
+
+func (r *intercept404) Write(b []byte) (int, error) {
+	return r.buf.Write(b)
 }
 
 
@@ -49,11 +65,38 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     }
   }
 
-  if target.ServeFrom != "" {
-    http.StripPrefix("/", http.FileServer(http.Dir(target.ServeFrom))).ServeHTTP(w, r)
-    h.log.Printf("%s -> serving static files from %s\n", host, target.ServeFrom)
-    return
-  }
+	if target.ServeFrom != "" {
+		fs := http.Dir(target.ServeFrom)
+		fileServer := http.StripPrefix("/", http.FileServer(fs))
+
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			rec := &intercept404{ResponseWriter: w, status: 200}
+
+			fileServer.ServeHTTP(rec, r)
+
+			if rec.status == http.StatusNotFound {
+				if f, err := fs.Open("/404.html"); err == nil {
+					defer f.Close()
+
+					w.Header().Set("Content-Type", "text/html; charset=utf-8")
+					w.WriteHeader(http.StatusNotFound)
+					io.Copy(w, f)
+					return
+				}
+				http.NotFound(w, r)
+				return
+			}
+
+			if rec.status != 0 {
+				w.WriteHeader(rec.status)
+			}
+			w.Write(rec.buf.Bytes())
+		})
+
+		handler.ServeHTTP(w, r)
+		h.log.Printf("%s -> serving static files from %s\n", host, target.ServeFrom)
+		return
+	}
 
   if target.Host == "" {
     h.log.Println("Proxy target has empty host for incoming host:", host)
