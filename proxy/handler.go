@@ -49,7 +49,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for _, mp := range h.config.Mappings {
 		src := mp.First
 		dst := mp.Second
-		if ProxySourceMatchesHost(src, host) {
+		if ProxySourceMatchesRequest(src, r) {
 			target = dst
 			break
 		}

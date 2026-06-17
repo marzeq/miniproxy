@@ -18,7 +18,7 @@ func TestCGITargetServesResponse(t *testing.T) {
 	handler := NewHandler(&config.Config{
 		Mappings: []config.Pair[*config.ProxySource, *config.ProxyDest]{
 			{
-				First: &config.ProxySource{HostPath: "example.com"},
+				First: &config.ProxySource{Host: "example.com"},
 				Second: &config.ProxyDest{
 					CGI: helperCGIConfig("echo"),
 				},
@@ -59,7 +59,7 @@ func TestSpecial504CanUseCGI(t *testing.T) {
 	handler := NewHandler(&config.Config{
 		Mappings: []config.Pair[*config.ProxySource, *config.ProxyDest]{
 			{
-				First: &config.ProxySource{HostPath: "example.com"},
+				First: &config.ProxySource{Host: "example.com"},
 				Second: &config.ProxyDest{
 					Host: "http://127.0.0.1:1",
 				},
@@ -96,7 +96,7 @@ func TestShellBeforeOnlyTargetReturnsBlankOK(t *testing.T) {
 	handler := NewHandler(&config.Config{
 		Mappings: []config.Pair[*config.ProxySource, *config.ProxyDest]{
 			{
-				First: &config.ProxySource{HostPath: "example.com"},
+				First: &config.ProxySource{Host: "example.com"},
 				Second: &config.ProxyDest{
 					ShellBefore: []string{helperShellWriteFileCommand(outputPath)},
 				},
@@ -129,6 +129,46 @@ func TestShellBeforeOnlyTargetReturnsBlankOK(t *testing.T) {
 	}
 	if strings.TrimSpace(string(output)) != "shell-before" {
 		t.Fatalf("got shell output %q, want %q", string(output), "shell-before")
+	}
+}
+
+func TestHandlerMatchesPathAndQueryMappings(t *testing.T) {
+	handler := NewHandler(&config.Config{
+		Mappings: []config.Pair[*config.ProxySource, *config.ProxyDest]{
+			{
+				First: &config.ProxySource{
+					Host:  "example.com",
+					Path:  "/api/*",
+					Query: map[string][]string{"debug": {"1"}},
+				},
+				Second: &config.ProxyDest{
+					CGI: helperCGIConfig("echo"),
+				},
+			},
+			{
+				First: &config.ProxySource{Host: "example.com"},
+				Second: &config.ProxyDest{
+					CGI: helperCGIConfig("gateway-timeout"),
+				},
+			},
+		},
+	}, log.New(io.Discard, "", 0))
+
+	req := httptest.NewRequest(http.MethodGet, "http://example.com/api/users?debug=1&mode=test", nil)
+	req.Host = "example.com"
+	rec := httptest.NewRecorder()
+
+	handler.ServeHTTP(rec, req)
+
+	res := rec.Result()
+	if res.StatusCode != http.StatusCreated {
+		t.Fatalf("got status %d, want %d", res.StatusCode, http.StatusCreated)
+	}
+	if got := res.Header.Get("X-Path-Info"); got != "/api/users" {
+		t.Fatalf("got X-Path-Info %q, want %q", got, "/api/users")
+	}
+	if got := res.Header.Get("X-Query-String"); got != "debug=1&mode=test" {
+		t.Fatalf("got X-Query-String %q, want %q", got, "debug=1&mode=test")
 	}
 }
 

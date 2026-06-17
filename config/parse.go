@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"sort"
 	"strings"
 
@@ -104,20 +105,9 @@ func Parse(path string) (*Config, error) {
 			return nil, fmt.Errorf("dest, host, serve_from, cgi or shell_before must be set in source %s", source)
 		}
 
-		sourcePort := 0
-		sourceParts := strings.Split(source, ":")
-		if len(sourceParts) == 2 {
-			_, err := fmt.Sscanf(sourceParts[1], "%d", &sourcePort)
-			if err != nil {
-				return nil, fmt.Errorf("invalid port in source %s", source)
-			}
-		} else if len(sourceParts) > 2 {
-			return nil, fmt.Errorf("invalid source format %s", source)
-		}
-
-		host := sourceParts[0]
-		if len(host) == 0 {
-			return nil, fmt.Errorf("empty host in source %s", source)
+		host, path, query, sourcePort, err := parseProxySource(source)
+		if err != nil {
+			return nil, err
 		}
 
 		tls := &TlsConfig{}
@@ -155,9 +145,11 @@ func Parse(path string) (*Config, error) {
 		}
 
 		proxySource := &ProxySource{
-			HostPath: host,
-			Port:     sourcePort,
-			Tls:      tls,
+			Host:  host,
+			Path:  path,
+			Query: query,
+			Port:  sourcePort,
+			Tls:   tls,
 		}
 
 		switch host {
@@ -171,6 +163,48 @@ func Parse(path string) (*Config, error) {
 	}
 
 	return config, nil
+}
+
+func parseProxySource(source string) (string, string, url.Values, int, error) {
+	hostPort := source
+	pathAndQuery := ""
+	if idx := strings.IndexAny(source, "/?"); idx >= 0 {
+		hostPort = source[:idx]
+		pathAndQuery = source[idx:]
+	}
+
+	host := hostPort
+	port := 0
+	if hostPart, portPart, ok := strings.Cut(hostPort, ":"); ok {
+		if strings.Contains(portPart, ":") {
+			return "", "", nil, 0, fmt.Errorf("invalid source format %s", source)
+		}
+		host = hostPart
+		if _, err := fmt.Sscanf(portPart, "%d", &port); err != nil {
+			return "", "", nil, 0, fmt.Errorf("invalid port in source %s", source)
+		}
+	}
+
+	if host == "" {
+		return "", "", nil, 0, fmt.Errorf("empty host in source %s", source)
+	}
+
+	path := ""
+	query := url.Values{}
+	if pathAndQuery != "" {
+		path = pathAndQuery
+		if idx := strings.Index(pathAndQuery, "?"); idx >= 0 {
+			path = pathAndQuery[:idx]
+			queryString := pathAndQuery[idx+1:]
+			parsedQuery, err := url.ParseQuery(queryString)
+			if err != nil {
+				return "", "", nil, 0, fmt.Errorf("invalid query params in source %s: %w", source, err)
+			}
+			query = parsedQuery
+		}
+	}
+
+	return host, path, query, port, nil
 }
 
 func parseStringList(value mconf_values.MconfValue, field string, source string) ([]string, error) {

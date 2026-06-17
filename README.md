@@ -32,12 +32,16 @@ CONFIG_FILE=./config.mconf ./miniproxy # custom config file
 
 Syntax is mconf, see [this repository](https://github.com/marzeq/mconf) for details.
 
+**Matching is first-match wins.** Rules are checked in the order they appear in the config, so put more specific entries like `git.example.com/clone*` before broader fallbacks like `git.example.com` or `*`.
+
 ```mconf
 "example.com" = "localhost:3000" # simple domain to address mapping
 "*.example.com" = "localhost:3001" # wildcard domain mapping !! IMPORTANT: example.com won't be matched here !!
 "api.*.example.com" = "localhost:3002" # more complex wildcard mapping
 "example.*" = "localhost:3003" # wildcard in TLD
 "*.example.*" = "localhost:3004" # mixing wildcards
+"example.com/api/*" = "localhost:3008" # match a host and path together
+"example.com/api/*?debug=1&tag=v*" = "localhost:3009" # query params are matched by key/value, order-independent
 "*" = "localhost:3005" # catch-all mapping, will match anything not matched before
 "404" = "localhost:3006" # special case, will be used when no other mapping matched
 "504" = "localhost:3007" # special case, will be used when upstream is not reachable

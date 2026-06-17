@@ -1,6 +1,11 @@
 package config
 
-import "fmt"
+import (
+	"fmt"
+	"net/url"
+	"sort"
+	"strings"
+)
 
 type Pair[T any, V any] struct {
 	First  T
@@ -27,16 +32,25 @@ func (t TlsConfig) String() string {
 }
 
 type ProxySource struct {
-	HostPath string
-	Port     int // 0 = any port
-	Tls      *TlsConfig
+	Host  string
+	Path  string
+	Query url.Values
+	Port  int // 0 = any port
+	Tls   *TlsConfig
 }
 
 func (p ProxySource) String() string {
+	var source strings.Builder
+	source.WriteString(p.Host)
 	if p.Port == 0 {
-		return p.HostPath
+		source.WriteString(p.Path)
+		source.WriteString(formatQueryValues(p.Query))
+		return source.String()
 	}
-	return fmt.Sprintf("%s:%d", p.HostPath, p.Port)
+	source.WriteString(fmt.Sprintf(":%d", p.Port))
+	source.WriteString(p.Path)
+	source.WriteString(formatQueryValues(p.Query))
+	return source.String()
 }
 
 type ProxyDest struct {
@@ -66,4 +80,25 @@ func (p ProxyDest) String() string {
 	default:
 		return ""
 	}
+}
+
+func formatQueryValues(values url.Values) string {
+	if len(values) == 0 {
+		return ""
+	}
+
+	keys := make([]string, 0, len(values))
+	for key := range values {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	parts := make([]string, 0, len(keys))
+	for _, key := range keys {
+		for _, value := range values[key] {
+			parts = append(parts, url.QueryEscape(key)+"="+url.QueryEscape(value))
+		}
+	}
+
+	return "?" + strings.Join(parts, "&")
 }

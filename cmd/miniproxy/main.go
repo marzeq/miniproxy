@@ -32,10 +32,10 @@ func main() {
 		src := mp.First
 		dst := mp.Second
 
-		l.Printf("Proxying %s to %s\n", src.HostPath, dst)
+		l.Printf("Proxying %s to %s\n", src, dst)
 
 		if src.Tls != nil {
-			certs[src.HostPath] = *src.Tls
+			certs[src.Host] = *src.Tls
 			l.Printf(" -- with TLS %s\n", src.Tls)
 		}
 	}

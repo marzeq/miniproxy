@@ -1,6 +1,7 @@
 package config
 
 import (
+	"net/url"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -102,6 +103,25 @@ func TestParseAllowsShellBeforeOnlyTarget(t *testing.T) {
 	}
 	if target.Host != "" || target.ServeFrom != "" || target.CGI != nil {
 		t.Fatalf("expected shell-only target, got %#v", target)
+	}
+}
+
+func TestParseSourcePathAndQuery(t *testing.T) {
+	cfg := parseConfigFromText(t, `"example.com/api/users?debug=1&tag=v2" = "localhost:3000"`)
+
+	if len(cfg.Mappings) != 1 {
+		t.Fatalf("got %d mappings, want 1", len(cfg.Mappings))
+	}
+
+	source := cfg.Mappings[0].First
+	if source.Host != "example.com" {
+		t.Fatalf("got host %q, want %q", source.Host, "example.com")
+	}
+	if source.Path != "/api/users" {
+		t.Fatalf("got path %q, want %q", source.Path, "/api/users")
+	}
+	if !reflect.DeepEqual(source.Query, url.Values{"debug": {"1"}, "tag": {"v2"}}) {
+		t.Fatalf("got query %v", source.Query)
 	}
 }
 
