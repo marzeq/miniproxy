@@ -45,12 +45,32 @@ Syntax is mconf, see [this repository](https://github.com/marzeq/mconf) for deta
 "example.org" = {
   serve_from = "./static" # serve static files from this directory
 }
+"cgi.example.org" = {
+  cgi = "./cgi-bin/app" # execute this CGI script for every request on this host
+}
+"advanced-cgi.example.org" = {
+  cgi = {
+    path = "./cgi-bin/app"
+    dir = "./cgi-bin" # optional working directory
+    args = ["--mode", "prod"] # optional extra argv entries
+    env = {
+      APP_ENV = "production" # optional extra environment variables
+    }
+    inherit_env = ["PATH"] # optional host environment variables to pass through
+  }
+}
 "foo.example.org" = {
   host = "localhost:4000" # equivalent to "foo.example.org" = "localhost:4000"
+}
+"webhook.example.org" = {
+  shell_before = [
+    "git -C /srv/site pull"
+  ] # shell_before can be used on its own and returns an empty 200 OK response
 }
 # "bar.example.org" = {
 #   host = "localhost:400"
 #   serve_from = "./static" # invalid, you can't have both host and serve_from, makes no sense
+#   cgi = "./cgi-bin/app" # also mutually exclusive with host/serve_from
 # }
 
 "secure.example.com" = { # example of TLS configuration
@@ -76,3 +96,4 @@ MIT
 - [x] Special 404 and 504 handling
 - [x] TLS from files
 - [x] Shell commands alongside host/serve_from – quasi-webhooks
+- [x] CGI handlers
