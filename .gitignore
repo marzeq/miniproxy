@@ -1,4 +1,5 @@
 /miniproxy
+/data/
 config.mconf
 *.crt
 *.key

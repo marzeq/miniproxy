@@ -6,5 +6,7 @@ services:
     network_mode: host
     restart: unless-stopped
     init: true
+    environment:
+      CONFIG_FILE: /data/config.mconf
     volumes:
-      - ./config.mconf:/etc/miniproxy/config.mconf:ro
+      - ./data:/data:ro

@@ -2,6 +2,7 @@
 .gitignore
 .agents
 .codex
+/data
 config.mconf
 miniproxy
 *.crt
