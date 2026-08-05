@@ -1,0 +1,10 @@
+services:
+  miniproxy:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    network_mode: host
+    restart: unless-stopped
+    init: true
+    volumes:
+      - ./config.mconf:/etc/miniproxy/config.mconf:ro

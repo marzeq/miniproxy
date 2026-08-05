@@ -1,0 +1,14 @@
+.git
+.gitignore
+.agents
+.codex
+config.mconf
+miniproxy
+*.crt
+*.key
+*.pem
+*.csr
+Dockerfile*
+compose*.yml
+compose*.yaml
+README.md
