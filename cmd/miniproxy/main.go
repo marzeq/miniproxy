@@ -22,7 +22,7 @@ type args struct {
 func parseArgs() (args, []error) {
 	args := args{}
 	errors := []error{}
-	for _, arg := range os.Args {
+	for _, arg := range os.Args[1:] {
 		switch arg {
 		case "-check":
 			args.check = true
@@ -67,7 +67,7 @@ func main() {
 	}
 
 	if args.check {
-		l.Printf("Configuration file %s is valid\n", cfgfile)
+		fmt.Printf("Configuration file %s is valid\n", cfgfile)
 		os.Exit(0)
 	}
 
