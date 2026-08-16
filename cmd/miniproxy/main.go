@@ -16,6 +16,7 @@ const version = "1.0.0"
 
 type args struct {
 	check bool
+	print bool
 }
 
 func parseArgs() (args, []error) {
@@ -25,6 +26,8 @@ func parseArgs() (args, []error) {
 		switch arg {
 		case "-check":
 			args.check = true
+		case "-print":
+			args.print = true
 		default:
 			errors = append(errors, fmt.Errorf("unknown argument '%s'", arg))
 		}
@@ -45,6 +48,17 @@ func main() {
 	cfgfile := os.Getenv("CONFIG_FILE")
 	if cfgfile == "" {
 		cfgfile = "/etc/miniproxy/config.mconf"
+	}
+
+	if args.print {
+		content, err := os.ReadFile(cfgfile)
+		if err != nil {
+			l.Fatal("read config: ", err)
+		}
+		fmt.Printf("%s\n", content)
+		if !args.check {
+			os.Exit(0)
+		}
 	}
 
 	cfg, err := config.Parse(cfgfile)
