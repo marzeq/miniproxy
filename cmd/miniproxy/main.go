@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/tls"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -13,7 +14,32 @@ import (
 const name = "miniproxy"
 const version = "1.0.0"
 
+type args struct {
+	check bool
+}
+
+func parseArgs() (args, []error) {
+	args := args{}
+	errors := []error{}
+	for _, arg := range os.Args {
+		switch arg {
+		case "-check":
+			args.check = true
+		default:
+			errors = append(errors, fmt.Errorf("unknown argument '%s'", arg))
+		}
+	}
+
+	return args, errors
+}
+
 func main() {
+	args, errors := parseArgs()
+	for _, err := range errors {
+		fmt.Printf("%v\n", err)
+		os.Exit(1)
+	}
+
 	l := log.New(os.Stdout, "", log.LstdFlags)
 
 	cfgfile := os.Getenv("CONFIG_FILE")
@@ -24,6 +50,11 @@ func main() {
 	cfg, err := config.Parse(cfgfile)
 	if err != nil {
 		l.Fatal("parse config: ", err)
+	}
+
+	if args.check {
+		l.Printf("Configuration file %s is valid\n", cfgfile)
+		os.Exit(0)
 	}
 
 	certs := make(map[string]config.TlsConfig)
